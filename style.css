@@ -1,0 +1,130 @@
+/* ================= OFDM Explorer — styles ================= */
+:root {
+  --bg: #f5f6fa;
+  --card: #ffffff;
+  --ink: #1f2733;
+  --muted: #5b6573;
+  --line: #e3e6ed;
+  --accent: #4f46e5;
+  --ok: #059669;
+  --bad: #dc2626;
+  --warn: #d97706;
+  --rainbow: linear-gradient(90deg, #ef4444, #f97316, #facc15, #22c55e, #06b6d4, #3b82f6, #8b5cf6);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+/* ---------- header + tabs ---------- */
+header { background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; }
+.rainbow-bar { height: 5px; background: var(--rainbow); }
+.head-inner {
+  max-width: 1400px; margin: 0 auto; padding: 14px 24px 0;
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px;
+}
+h1 {
+  margin: 0; font-size: 1.6rem; letter-spacing: -0.02em;
+  background: var(--rainbow); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: saturate(1.1) brightness(0.9);
+}
+.sub { margin: 2px 0 12px; color: var(--muted); font-size: 0.92rem; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tab {
+  border: 1px solid var(--line); border-bottom: none; background: #f0f2f7; color: var(--muted);
+  padding: 9px 14px; border-radius: 10px 10px 0 0; font: inherit; font-size: 0.9rem; cursor: pointer;
+}
+.tab:hover { color: var(--ink); }
+.tab.active { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: inset 0 3px 0 var(--accent); }
+
+/* ---------- layout ---------- */
+main { max-width: 1400px; margin: 0 auto; padding: 20px 24px 40px; }
+.panel { display: none; }
+.panel.active { display: grid; grid-template-columns: 290px 1fr; gap: 20px; align-items: start; }
+
+.controls {
+  position: sticky; top: 112px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 16px 18px;
+  max-height: calc(100vh - 130px); overflow: auto;
+}
+.controls h2 { margin: 0 0 10px; font-size: 1rem; }
+.controls h3 { margin: 20px 0 8px; font-size: 0.92rem; padding-top: 14px; border-top: 1px solid var(--line); }
+.ctl { display: block; margin: 12px 0; font-size: 0.9rem; }
+.ctl span { display: block; margin-bottom: 4px; }
+.ctl small, .controls small { display: block; color: var(--muted); font-size: 0.78rem; margin-top: 3px; }
+output { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--accent); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+select { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 0.88rem; background: #fff; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 0.9rem; margin: 10px 0; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; }
+.btn {
+  width: 100%; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--accent);
+  background: var(--accent); color: #fff; font: inherit; font-size: 0.88rem; cursor: pointer;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn.ghost { background: #fff; color: var(--accent); }
+.presets { display: grid; gap: 8px; margin-top: 16px; }
+
+.content { display: grid; gap: 16px; min-width: 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px 12px; min-width: 0; }
+.card h2 { margin: 0 0 4px; font-size: 1rem; }
+.note { margin: 0 0 8px; color: var(--muted); font-size: 0.84rem; }
+canvas { display: block; width: 100%; }
+.row2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
+.ok { color: var(--ok); }
+.bad { color: var(--bad); }
+
+/* ---------- readout tiles ---------- */
+.readouts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.ro { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; position: relative; overflow: hidden; }
+.ro::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--rainbow); }
+.ro-l { font-size: 0.76rem; color: var(--muted); font-weight: 600; }
+.ro-v { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0; }
+.ro-n { font-size: 0.76rem; color: var(--muted); }
+.ro.accent .ro-v { color: var(--accent); }
+.ro.good .ro-v { color: var(--ok); }
+.ro.warn .ro-v { color: var(--warn); }
+
+/* ---------- equations ---------- */
+.eqs { display: grid; gap: 6px; }
+.eqs > div {
+  display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px;
+  padding: 7px 10px; border-radius: 8px; background: #f7f8fb; font-size: 0.88rem;
+}
+.eqs .f { font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-size: 0.98rem; }
+.eqs .v { color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.hint { margin: 0 0 6px; font-size: 0.8rem; color: var(--muted); }
+.row2.even { grid-template-columns: 1fr 1.25fr; }
+input[type=range]:disabled { opacity: 0.4; }
+
+/* rate table (tab 3) */
+table.rates { width: 100%; border-collapse: collapse; font-size: 0.86rem; font-variant-numeric: tabular-nums; }
+.rates th { text-align: left; font-weight: 600; color: var(--muted); font-size: 0.76rem; padding: 6px 8px; border-bottom: 2px solid var(--line); }
+.rates td { padding: 7px 8px; border-bottom: 1px solid var(--line); }
+.rates tbody tr { cursor: pointer; }
+.rates tbody tr:hover { background: #f4f5fb; }
+.rates tbody tr.sel { background: #eef0ff; box-shadow: inset 4px 0 0 var(--accent); }
+.rates tbody tr.sel td { color: var(--accent); }
+
+/* hover tooltip on the subcarrier map */
+.tipcard { position: relative; }
+.tip {
+  display: none; position: absolute; pointer-events: none; z-index: 5;
+  background: #111827; color: #fff; font-size: 0.78rem; line-height: 1.4;
+  padding: 7px 10px; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.18); width: 180px;
+}
+footer { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 0 0 24px; }
+
+/* ---------- small screens ---------- */
+@media (max-width: 980px) {
+  .panel.active { grid-template-columns: 1fr; }
+  .controls { position: static; max-height: none; }
+  .row2 { grid-template-columns: 1fr; }
+  .eqs > div { grid-template-columns: 1fr; gap: 2px; }
+}

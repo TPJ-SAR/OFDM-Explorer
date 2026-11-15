@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OFDM Explorer · WCM555</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="rainbow-bar"></div>
+    <div class="head-inner">
+      <div>
+        <h1>OFDM Explorer</h1>
+        <p class="sub">Orthogonal Frequency Division Multiplexing, built up one idea at a time</p>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="t1" role="tab">1 · Subcarriers &amp; orthogonality</button>
+        <button class="tab" data-tab="t2" role="tab">2 · Multipath &amp; cyclic prefix</button>
+        <button class="tab" data-tab="t3" role="tab">3 · Wi-Fi 802.11a preset</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- ============================ TAB 1 ============================ -->
+    <section id="t1" class="panel active">
+      <aside class="controls">
+        <h2>Controls</h2>
+
+        <label class="ctl">
+          <span>Number of subcarriers <b>N</b> = <output id="nVal"></output></span>
+          <input type="range" id="nSlider" min="1" max="16" step="1">
+        </label>
+
+        <label class="ctl">
+          <span>OFDM symbol time <b>τ<sub>S</sub></b> = <output id="tauVal"></output> µs</span>
+          <input type="range" id="tauSlider" min="0.8" max="20" step="0.1">
+          <small>Δf = 1/τ<sub>S</sub>, so a longer symbol packs the subcarriers closer together</small>
+        </label>
+
+        <label class="ctl">
+          <span>Modulation on each subcarrier</span>
+          <select id="modSel">
+            <option>BPSK</option>
+            <option selected>QPSK</option>
+            <option>16-QAM</option>
+          </select>
+        </label>
+        <button id="reroll" class="btn">🎲 New random data</button>
+
+        <label class="ctl">
+          <span>Frequency offset <b>ε</b> = <output id="epsVal"></output> × Δf</span>
+          <input type="range" id="epsSlider" min="-0.5" max="0.5" step="0.01">
+          <small>Models oscillator error / Doppler. Any ε ≠ 0 breaks orthogonality → ICI</small>
+        </label>
+
+        <label class="check"><input type="checkbox" id="showSum" checked> Show composite spectrum</label>
+
+        <h3>Multiply &amp; integrate test</h3>
+        <div class="pair">
+          <label>Received f<sub>i</sub>
+            <select id="iSel"></select></label>
+          <label>× Reference f<sub>j</sub>
+            <select id="jSel"></select></label>
+        </div>
+        <label class="ctl">
+          <span>Integration window T = <output id="winVal"></output> × τ<sub>S</sub></span>
+          <input type="range" id="winSlider" min="0.25" max="2" step="0.05">
+          <small>Orthogonality only holds when T is a whole number of symbol times</small>
+        </label>
+
+        <div class="presets">
+          <button id="presetLecture" class="btn ghost">Lecture example (N = 4)</button>
+          <button id="presetReset" class="btn ghost">Reset</button>
+        </div>
+      </aside>
+
+      <div class="content">
+        <div class="readouts" id="readouts"></div>
+
+        <div class="card">
+          <h2>Time domain: each subcarrier over one OFDM symbol</h2>
+          <p class="note">Subcarrier k has frequency f<sub>k</sub> = k·Δf, so it fits exactly <b>k whole cycles</b> in τ<sub>S</sub>.
+            Its starting phase comes from the data symbol it carries (right-hand labels).</p>
+          <canvas id="cvTime"></canvas>
+        </div>
+
+        <div class="card">
+          <h2>Time domain: composite OFDM symbol (sum of all subcarriers)</h2>
+          <p class="note">This is the real part of the IFFT output, x(t) = Σ X<sub>k</sub>·e<sup>j2πf<sub>k</sub>t</sup>.
+            Notice the tall peaks compared with the RMS level: that is OFDM's high PAPR.</p>
+          <canvas id="cvSum"></canvas>
+        </div>
+
+        <div class="card">
+          <h2>Frequency domain: overlapping sinc spectra</h2>
+          <p class="note">Each subcarrier's spectrum is a sinc centred on f<sub>k</sub>, with nulls every Δf.
+            Dashed lines are where the receiver's FFT samples. With ε = 0, every peak sits on the other subcarriers' nulls,
+            so there is no guard band and no interference. Move ε and the coloured dots show the leakage (ICI).</p>
+          <canvas id="cvSpec"></canvas>
+        </div>
+
+        <div class="row2">
+          <div class="card">
+            <h2>Multiply &amp; integrate: <span id="corrTitle"></span></h2>
+            <p class="note">Shaded: cos(2πf<sub>i</sub>t)·cos(2πf<sub>j</sub>t). Dark line: running result (2/T)∫ ... dt.
+              <span id="corrVerdict"></span></p>
+            <canvas id="cvCorr"></canvas>
+          </div>
+          <div class="card">
+            <h2>Orthogonality matrix (FFT receiver view)</h2>
+            <p class="note">Every received subcarrier i correlated with every reference j. Ideally the matrix is the identity
+              (1s on the diagonal, 0s elsewhere). <b>Click a cell</b> to load it into the test on the left.</p>
+            <canvas id="cvMatrix"></canvas>
+          </div>
+        </div>
+
+        <div class="card eq">
+          <h2>Key equations (live values)</h2>
+          <div id="equations"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ TAB 2 ============================ -->
+    <section id="t2" class="panel">
+      <aside class="controls">
+        <h2>Controls</h2>
+        <p class="hint">Wi-Fi sampling: 20 MHz → T<sub>s</sub> = 50 ns, 64-point FFT → T<sub>FFT</sub> = 3.2 µs, 52 active subcarriers.</p>
+
+        <label class="ctl">
+          <span>Cyclic prefix T<sub>CP</sub> = <output id="t2LVal"></output></span>
+          <input type="range" id="t2L" min="0" max="32" step="1">
+          <small>802.11a uses 0.8 µs (16 samples)</small>
+        </label>
+
+        <h3>Echo (reflected path)</h3>
+        <label class="ctl">
+          <span>Delay τ = <output id="t2DVal"></output></span>
+          <input type="range" id="t2D" min="0" max="40" step="1">
+          <small>Extra path length = c·τ (0.5 µs ≈ 150 m)</small>
+        </label>
+        <label class="ctl">
+          <span>Relative strength a = <output id="t2AVal"></output></span>
+          <input type="range" id="t2A" min="0" max="0.95" step="0.05">
+        </label>
+        <label class="ctl">
+          <span>Echo phase φ = <output id="t2PhiVal"></output></span>
+          <input type="range" id="t2Phi" min="0" max="355" step="5">
+        </label>
+
+        <h3>Receiver</h3>
+        <label class="ctl">
+          <span>Modulation</span>
+          <select id="t2Mod"><option>BPSK</option><option>QPSK</option><option selected>16-QAM</option><option>64-QAM</option></select>
+        </label>
+        <label class="check"><input type="checkbox" id="t2Eq"> <span>One-tap equalizer (X̂ = Y / H)</span></label>
+        <label class="check"><input type="checkbox" id="t2Noise"> Add noise (AWGN)</label>
+        <label class="ctl">
+          <span>SNR per subcarrier = <output id="t2SnrVal"></output></span>
+          <input type="range" id="t2Snr" min="5" max="40" step="1">
+        </label>
+        <button id="t2Reroll" class="btn">🎲 New random data</button>
+
+        <div class="presets">
+          <button id="t2PresetOk" class="btn ghost">✓ Echo inside CP</button>
+          <button id="t2PresetIsi" class="btn ghost">✗ Echo longer than CP</button>
+          <button id="t2PresetNoCp" class="btn ghost">✗ No cyclic prefix</button>
+          <button id="t2PresetNoEq" class="btn ghost">CP OK, equalizer off</button>
+          <button id="t2Reset" class="btn ghost">Reset</button>
+        </div>
+      </aside>
+
+      <div class="content">
+        <div class="readouts" id="t2Readouts"></div>
+
+        <div class="card">
+          <h2>Time domain: the echo vs the cyclic prefix</h2>
+          <p class="note">Each colour is one OFDM symbol: the <b>darker slice is the CP</b> (a copy of the symbol's tail).
+            The receiver throws the CP away and FFTs only the 3.2 µs between the dashed lines. The echo is the same stream shifted by τ.
+            While τ ≤ T<sub>CP</sub>, the previous symbol's echo dies out inside the CP. Once τ &gt; T<sub>CP</sub>, it spills into the
+            FFT window (<span class="bad"><b>red hatching</b></span>) → ISI.</p>
+          <canvas id="t2Time"></canvas>
+        </div>
+
+        <div class="row2 even">
+          <div class="card">
+            <h2>Received constellation (after FFT)</h2>
+            <p class="note">Each dot is one subcarrier of one symbol, coloured by subcarrier (red = lowest, violet = highest).
+              + marks the ideal points. Clean clusters = perfect recovery.</p>
+            <canvas id="t2Const"></canvas>
+          </div>
+          <div class="card">
+            <h2>Channel response: frequency-selective fading</h2>
+            <p class="note">The echo adds constructively at some frequencies and destructively at others. Each stem is the gain
+              H<sub>k</sub> one subcarrier sees. OFDM handles this because each narrow subcarrier only needs a single
+              complex correction, which is the one-tap equalizer.</p>
+            <canvas id="t2Chan"></canvas>
+          </div>
+        </div>
+
+        <div class="card eq">
+          <h2>Key equations (live values)</h2>
+          <div id="t2Equations"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ TAB 3 ============================ -->
+    <section id="t3" class="panel">
+      <aside class="controls">
+        <h2>Controls</h2>
+        <label class="ctl">
+          <span>Channel bandwidth (sample clock f<sub>s</sub>)</span>
+          <select id="t3Bw">
+            <option value="20000000">20 MHz (802.11a/g)</option>
+            <option value="10000000">10 MHz (802.11p / j half-clocked)</option>
+            <option value="5000000">5 MHz (quarter-clocked)</option>
+          </select>
+          <small>Same 64-point FFT, so every time scales by 20 MHz / f<sub>s</sub></small>
+        </label>
+
+        <div class="ctl">
+          <span>Guard interval (cyclic prefix)</span>
+          <label class="check"><input type="radio" name="t3gi" id="t3GiLong"> <span>Long: T<sub>FFT</sub>/4 (802.11a)</span></label>
+          <label class="check"><input type="radio" name="t3gi" id="t3GiShort"> <span>Short: T<sub>FFT</sub>/8 (802.11n option)</span></label>
+          <small>Shorter GI = more throughput but less multipath tolerance</small>
+        </div>
+
+        <label class="ctl">
+          <span>Rate mode</span>
+          <select id="t3Mode"></select>
+          <small>Or click a row in the rate table</small>
+        </label>
+
+        <label class="ctl">
+          <span>Payload (PSDU) = <output id="t3BytesVal"></output></span>
+          <input type="range" id="t3Bytes" min="20" max="4095" step="1">
+        </label>
+
+        <div class="presets"><button id="t3Reset" class="btn ghost">Reset to 802.11a, 54 Mbit/s</button></div>
+      </aside>
+
+      <div class="content">
+        <div class="readouts" id="t3Readouts"></div>
+
+        <div class="card tipcard">
+          <h2>802.11a subcarrier map: 64 FFT bins, 52 used</h2>
+          <p class="note">48 rainbow <b>data</b> subcarriers, 4 <b>pilots</b> (◆ at ±7, ±21, known BPSK values used to track phase),
+            an unused <b class="bad">DC null</b> at k = 0, and empty guard bins at the edges. Hover any bin for details.</p>
+          <canvas id="t3Map"></canvas>
+          <div id="t3Tip" class="tip"></div>
+        </div>
+
+        <div class="row2">
+          <div class="card">
+            <h2>802.11a rate modes</h2>
+            <p class="note">All data subcarriers use the same modulation within a burst. The convolutional code rate R sets how many
+              coded bits are real data. Click a row.</p>
+            <div id="t3Table"></div>
+          </div>
+          <div class="card">
+            <h2>Data-subcarrier constellation</h2>
+            <p class="note" id="t3ConstTitle"></p>
+            <canvas id="t3Const"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>OFDM burst structure</h2>
+          <p class="note">Preamble (short training for sync, long training for channel estimation, which is what tab 2's equalizer needs),
+            then the SIGNAL symbol (rate and length, always BPSK 1/2), then the DATA symbols. The payload slider shows how the fixed
+            preamble overhead drags effective throughput below the PHY rate.</p>
+          <canvas id="t3Frame"></canvas>
+        </div>
+
+        <div class="card eq">
+          <h2>Key equations (live values)</h2>
+          <div id="t3Equations"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>WCM555 · Build-a-Tool: Visualizing Communications Concepts</footer>
+
+  <script src="js/ofdm-math.js"></script>
+  <script src="js/plot.js"></script>
+  <script src="js/tab1.js"></script>
+  <script src="js/tab2.js"></script>
+  <script src="js/tab3.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

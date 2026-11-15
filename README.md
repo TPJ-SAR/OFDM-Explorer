@@ -42,17 +42,6 @@ An interactive, browser-based tool that builds up OFDM one idea at a time. It ha
 | 802.11a timing | Δf = fs/64, T_GI = T_FFT/4, T_SYM = T_FFT + T_GI | `wifiTiming` |
 | 802.11a rate | N_DBPS = 48·N_BPSC·R, Rb = N_DBPS/T_SYM | `wifiRate` |
 | Burst length | N_SYM = ⌈(16 + 8·bytes + 6)/N_DBPS⌉ | `wifiFrame` |
-
-## Publish (public link for Blackboard)
-1. Create a new public repo on GitHub (e.g. `ofdm-explorer`).
-2. In VS Code: **Source Control → Initialize Repository → commit → Publish to GitHub**, or upload the files on github.com.
-3. On GitHub: **Settings → Pages → Source: Deploy from a branch → `main` / root → Save**.
-4. After about a minute the tool is live at `https://<your-username>.github.io/ofdm-explorer/`.
-
-## Model assumptions (for the write-up's "limitation")
-- Rectangular pulse per symbol, so the spectrum is an exact sinc. Real systems add filtering and windowing.
-- Tab 1: one OFDM symbol, no noise, no channel.
-- Tab 2: a single echo (two-path channel) with whole-sample delays, a static channel (no Doppler), and **perfect channel knowledge** for the equalizer (a real receiver estimates H from the long training field). Pilots are treated like data. No coding or interleaving.
 - Tab 3: effective throughput counts only PHY overhead (preamble, SIGNAL, padding). Real Wi-Fi also loses time to MAC headers, ACKs and backoff, which is why the VSA notes say realistic throughput is in the mid-20s Mbit/s.
 - The frequency offset ε is applied equally to all subcarriers.
 - PAPR uses the real waveform (Vpk²/Vrms², as in the handout), not the complex envelope.
